@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<!--###############################################################################
+##
+##  Copyright (C) 2014, Tavendo GmbH and/or collaborators. All rights reserved.
+## 
+##  Redistribution and use in source and binary forms, with or without
+##  modification, are permitted provided that the following conditions are met:
+## 
+##  1. Redistributions of source code must retain the above copyright notice,
+##     this list of conditions and the following disclaimer.
+## 
+##  2. Redistributions in binary form must reproduce the above copyright notice,
+##     this list of conditions and the following disclaimer in the documentation
+##     and/or other materials provided with the distribution.
+## 
+##  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+##  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+##  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+##  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+##  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+##  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+##  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+##  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+##  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+##  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+##  POSSIBILITY OF SUCH DAMAGE.
+##
+###############################################################################
+-->
+
+<html>
+
+   <body>
+      <h1>Hello PROXY</h1>
+      <input id="url"/> 
+      <button id="open">open</button>
+  	  <iframe id="page" style="width:100%;height:1000px;overflow:auto"></iframe>
+      <script src="jquery.js"></script>
+      <script src="autobahn.js"></script>
+      <script src="peerproxy.js"></script>
+
+<script>
+   
+      
+
+function getDocument(url, callback) {
+  console.log("url:", url)
+  http = new XMLHttpRequest();
+  http.open('GET', url);
+  http.onreadystatechange = function() {
+    if (http.readyState === 4) {
+      // converts string to html document with can query
+      parser = new DOMParser()
+      parsed = parser.parseFromString(http.responseText.replace(/(\r\n|\n|\r)/gm, "").replace(/<!--[\s\S]*?-->/g, ""), "text/html")
+      callback(parsed);
+    }
+  };
+  http.send(null);
+}
+
+
+$("#open").click(function(){
+  url=$("#url").val()
+ buildIframe(url)
+
+})
+
+function buildIframe(url){
+  getDocument(url, function(data) {
+    $("#searchpage").contents().find("head").empty()
+    $("#searchpage").contents().find("body").empty()
+    head = $(data).find("head");
+    body = $(data).find("body");
+   
+   
+   
+    var linkparser = document.createElement('a');
+    linkparser.href = url
+    
+    $(head).find("link").each(function() {
+      defaulthref = this.getAttribute("href")
+      console.log(defaulthref)
+      if (defaulthref.startsWith("http") || defaulthref.startsWith("//")) {
+        href = defaulthref
+      } else {
+        href = linkparser.origin + defaulthref
+      }
+
+      this.href = href
+      // solution for importing css through xmlhttprequest ????
+      // $(this).replaceWith("<style> @import url('"+href+"')</style>")
+
+    })
+    $(body).find("[src]").each(function() {
+      defaultsrc = this.getAttribute("src")
+      console.log(defaultsrc)
+      if (defaultsrc.startsWith("http") || defaultsrc.startsWith("//")) {
+        src = defaultsrc
+      } else {
+        src = linkparser.origin + defaultsrc
+      }
+
+      this.src = src
+      
+
+    })
+
+    // $("#page").contents()[0].origin="http://localhost:8080"
+    $("#page").contents().find("head").replaceWith(head)
+    $("#page").contents().find("body").replaceWith(body)
+    $("#page").contents().find("body").css("width","80%")
+
+   })
+} 
+
+
+
+
+
+
+
+
+			   
+      </script>
+   </body>
+</html>
